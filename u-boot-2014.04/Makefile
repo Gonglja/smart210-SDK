@@ -199,7 +199,7 @@ ifeq ($(HOSTARCH),$(ARCH))
 CROSS_COMPILE ?=
 endif
 
-CROSS_COMPILE ?= /home/flinn/tools/4.5.1/bin/arm-none-linux-gnueabi-
+CROSS_COMPILE ?= /opt/FriendlyARM/toolschain/4.5.1/bin/arm-none-linux-gnueabi-
 
 # SHELL used by kbuild
 CONFIG_SHELL := $(shell if [ -x "$$BASH" ]; then echo $$BASH; \

@@ -1,8 +1,8 @@
-CC      = /home/flinn/tools/4.5.1/bin/arm-none-linux-gnueabi-gcc
-LD      = /home/flinn/tools/4.5.1/bin/arm-none-linux-gnueabi-ld
-AR      = /home/flinn/tools/4.5.1/bin/arm-none-linux-gnueabi-ar
-OBJCOPY = /home/flinn/tools/4.5.1/bin/arm-none-linux-gnueabi-objcopy
-OBJDUMP = /home/flinn/tools/4.5.1/bin/arm-none-linux-gnueabi-objdump
+CC      = /opt/FriendlyARM/toolschain/4.5.1/bin/arm-none-linux-gnueabi-gcc
+LD      = /opt/FriendlyARM/toolschain/4.5.1/bin/arm-none-linux-gnueabi-ld
+AR      = /opt/FriendlyARM/toolschain/4.5.1/bin/arm-none-linux-gnueabi-ar
+OBJCOPY = /opt/FriendlyARM/toolschain/4.5.1/bin/arm-none-linux-gnueabi-objcopy
+OBJDUMP = /opt/FriendlyARM/toolschain/4.5.1/bin/arm-none-linux-gnueabi-objdump
 
 
 CFLAGS          := -Wall -O2 -nostdlib -fno-builtin \

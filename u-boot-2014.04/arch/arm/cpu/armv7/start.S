@@ -19,15 +19,37 @@
 #include <asm/system.h>
 #include <linux/linkage.h>
 
-.globl _start
-_start: b	reset
-	ldr	pc, _undefined_instruction
-	ldr	pc, _software_interrupt
-	ldr	pc, _prefetch_abort
+/*
+ * 整个分为几部分
+ * 1.初始化异常向量表
+ * 2.设置CPU SVC模式，关中断
+ * 3.配置CP15 设置异常向量入口
+ * 4.跳转至PC15初始化配置
+ * 5.跳转至cpu_init_crit
+ * 6.跳转到_main
+ */
+ 
+/*
+ * b指令：简单的程序跳转，跳转到目标标号处执行 
+ * bl指令：带链接程序跳转，在跳转之前，将当前PC保存到R14中，也就有返回地址到R14中，在子程序返回时只需要MOV PC，LR即可
+ * .global声明_start为全局符号，_start就会被链接器链接到，也就是链接脚本中的入口地址了。之后是一系列ARM的异常向量表。8种异常分别占用4个字节，因此每种异常入口处都填写一条跳转指令，直接跳转到相应的异常处理函数中，reset异常是直接跳转到reset函数，其他7种异常是用ldr将处理函数入口地址加载到pc中
+ */
+.globl _start   				/* .globl指示告诉汇编器，_start是一个全局符号*/
+_start: b	reset				/* 跳转到reset符号处*/
+	ldr	pc, _undefined_instruction	/* 未定义指令异常*/
+	ldr	pc, _software_interrupt		/* 软中断，Linux系统调用*/
+	ldr	pc, _prefetch_abort		/* 预取址中止，取不到下一条指令*/
 	ldr	pc, _data_abort
 	ldr	pc, _not_used
-	ldr	pc, _irq
-	ldr	pc, _fiq
+	ldr	pc, _irq			/* 中断*/
+	ldr	pc, _fiq			/* 快中断*/
+	
+/*
+ * 如果CONFIG_SPL_BUILD定义了，即处于BL1的阶段，
+ * 此时发生_undefined_instruction（未定义指令异常），那么就将_undefined_instruction赋给pc，也就是跳转到_undefined_instruction本身，即死循环；
+ * 如果CONFIG_SPL_BUILD没有定义，即处于BL2的阶段，
+ * 此时发生_undefined_instruction（未定义指令异常），那么就将undefined_instruction赋给pc，也就是跳转到undefined_instruction的部分。
+ */
 #ifdef CONFIG_SPL_BUILD
 _undefined_instruction: .word _undefined_instruction
 _software_interrupt:	.word _software_interrupt
@@ -55,10 +77,10 @@ _fiq:			.word fiq
 _pad:			.word 0x12345678 /* now 16*4=64 */
 #endif	/* CONFIG_SPL_BUILD */
 
-.global _end_vect
+.global _end_vect       /*异常向量和处理部分结束*/
 _end_vect:
 
-	.balignl 16,0xdeadbeef
+	.balignl 16,0xdeadbeef /*下一句需要16字节对齐，若没有满，就将0xdeadbeef填入，直至对其*/
 /*************************************************************************
  *
  * Startup Code (reset vector)
@@ -70,11 +92,11 @@ _end_vect:
  *
  *************************************************************************/
 
-#ifdef CONFIG_USE_IRQ
+#ifdef CONFIG_USE_IRQ        //如果使用中断IRQ（肯定用到的）
 /* IRQ stack memory (calculated at run-time) */
-.globl IRQ_STACK_START
+.globl IRQ_STACK_START       //表示堆栈指针开始的地方
 IRQ_STACK_START:
-	.word	0x0badc0de
+	.word	0x0badc0de   //此时不知道堆栈在哪里，就放入没有意义的非法地址，运行时该值会被修改
 
 /* IRQ stack memory (calculated at run-time) */
 .globl FIQ_STACK_START
@@ -92,24 +114,29 @@ IRQ_STACK_START_IN:
  */
 
 reset:
-	bl	save_boot_params
+	bl	save_boot_params       //跳转到save_boot_params符号处
 	/*
 	 * disable interrupts (FIQ and IRQ), also set the cpu to SVC32 mode,
 	 * except if in HYP mode already
 	 */
-	mrs	r0, cpsr
+	mrs	r0, cpsr					//将cpsr寄存器的值读到r0中
 	and	r1, r0, #0x1f		@ mask mode bits
 	teq	r1, #0x1a		@ test for HYP mode
-	bicne	r0, r0, #0x1f		@ clear all mode bits
-	orrne	r0, r0, #0x13		@ set SVC mode
-	orr	r0, r0, #0xc0		@ disable FIQ and IRQ
-	msr	cpsr,r0
+	bicne	r0, r0, #0x1f		@ clear all mode bits  
+	orrne	r0, r0, #0x13		@ set SVC mode 		//更改处理器模式为SVC模式
+	orr	r0, r0, #0xc0		@ disable FIQ and IRQ	//将I、F位（7、6位）置1 也即0xc0，关闭快中断和中断
+	msr	cpsr,r0						//将r0的内容写入cpsr寄存器
 
 /*
  * Setup vector:
  * (OMAP4 spl TEXT_BASE is not 32 byte aligned.
  * Continue to use ROM code vector only in OMAP4 spl)
  */
+ 
+ /*
+  * 这部分代码通过对协处理器CP15进行操作，设置了处理器的异常向量入口地址为_start。
+  * 这是因为ARM默认的异常向量表入口在0x0地址，然而S5PV210中0x0地址存放的是IROM，不可修改，自然不可能存放异常向量表，所以需要修改异常向量表入口，将它们映射到其他位置上去。
+  */
 #if !(defined(CONFIG_OMAP44XX) && defined(CONFIG_SPL_BUILD))
 	/* Set V=0 in CP15 SCTRL register - for VBAR to point to vector */
 	mrc	p15, 0, r0, c1, c0, 0	@ Read CP15 SCTRL Register
@@ -170,6 +197,7 @@ ENDPROC(save_boot_params)
  * cpu_init_cp15
  *
  * Setup CP15 registers (cache, MMU, TLBs). The I-cache is turned on unless
+ * 配置CP15，关闭的cache、MMU、TLBs。icache视情况
  * CONFIG_SYS_ICACHE_OFF is defined.
  *
  *************************************************************************/
@@ -178,26 +206,26 @@ ENTRY(cpu_init_cp15)
 	 * Invalidate L1 I/D
 	 */
 	mov	r0, #0			@ set up for MCR
-	mcr	p15, 0, r0, c8, c7, 0	@ invalidate TLBs
-	mcr	p15, 0, r0, c7, c5, 0	@ invalidate icache
-	mcr	p15, 0, r0, c7, c5, 6	@ invalidate BP array
-	mcr     p15, 0, r0, c7, c10, 4	@ DSB
-	mcr     p15, 0, r0, c7, c5, 4	@ ISB
+	mcr	p15, 0, r0, c8, c7, 0	@ invalidate TLBs 	//失效TLBs
+	mcr	p15, 0, r0, c7, c5, 0	@ invalidate icache	//失效icache
+	mcr	p15, 0, r0, c7, c5, 6	@ invalidate BP array	//失效分支预测
+	mcr     p15, 0, r0, c7, c10, 4	@ DSB			//数据同步屏障
+	mcr     p15, 0, r0, c7, c5, 4	@ ISB			//指令同步屏障
 
 	/*
 	 * disable MMU stuff and caches
 	 */
-	mrc	p15, 0, r0, c1, c0, 0
-	bic	r0, r0, #0x00002000	@ clear bits 13 (--V-)
-	bic	r0, r0, #0x00000007	@ clear bits 2:0 (-CAM)
-	orr	r0, r0, #0x00000002	@ set bit 1 (--A-) Align
-	orr	r0, r0, #0x00000800	@ set bit 11 (Z---) BTB
+	mrc	p15, 0, r0, c1, c0, 0				//将SCTLR的值赋给r0
+	bic	r0, r0, #0x00002000	@ clear bits 13 (--V-)	//清零第13位，异常向量映射到0x00000000
+	bic	r0, r0, #0x00000007	@ clear bits 2:0 (-CAM)	//失效dcache，失效对齐检查，禁用MMU
+	orr	r0, r0, #0x00000002	@ set bit 1 (--A-) Align//使能对齐检查模式
+	orr	r0, r0, #0x00000800	@ set bit 11 (Z---) BTB	//使能分支预测
 #ifdef CONFIG_SYS_ICACHE_OFF
 	bic	r0, r0, #0x00001000	@ clear bit 12 (I) I-cache
 #else
-	orr	r0, r0, #0x00001000	@ set bit 12 (I) I-cache
+	orr	r0, r0, #0x00001000	@ set bit 12 (I) I-cache //使能icache
 #endif
-	mcr	p15, 0, r0, c1, c0, 0
+	mcr	p15, 0, r0, c1, c0, 0				 //将r0的值赋给SCTLR
 
 #ifdef CONFIG_ARM_ERRATA_716044
 	mrc	p15, 0, r0, c1, c0, 0	@ read system control register
@@ -228,7 +256,7 @@ ENTRY(cpu_init_cp15)
 	mcr	p15, 0, r0, c15, c0, 1	@ write diagnostic register
 #endif
 
-	mov	pc, lr			@ back to my caller
+	mov	pc, lr			@ back to my caller //子过程运行结束，跳转回去
 ENDPROC(cpu_init_cp15)
 
 #ifndef CONFIG_SKIP_LOWLEVEL_INIT

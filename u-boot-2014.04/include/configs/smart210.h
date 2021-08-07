@@ -80,7 +80,7 @@
 #define CONFIG_CMD_FAT
 #define CONFIG_CMD_MTDPARTS
 
-#define CONFIG_BOOTDELAY	3
+#define CONFIG_BOOTDELAY	1
 
 #define CONFIG_ZERO_BOOTDELAY_CHECK
 
@@ -96,7 +96,7 @@
 
 #define NORMAL_MTDPARTS_DEFAULT MTDPARTS_DEFAULT
 
-#define CONFIG_BOOTCOMMAND	"run ubifsboot"
+#define CONFIG_BOOTCOMMAND	"nand read.jffs2 0x30007FC0 0x80000 0x500000;  bootm 0x30007FC0"
 
 #define CONFIG_RAMDISK_BOOT	"root=/dev/ram0 rw rootfstype=ext2" \
 				" console=ttySAC0,115200n8" \
@@ -234,8 +234,8 @@
 #define DM9000_IO                               (CONFIG_DM9000_BASE)
 #define DM9000_DATA                             (CONFIG_DM9000_BASE + 0x4)
 #define CONFIG_CMD_PING
-#define CONFIG_IPADDR                   192.168.1.123
-#define CONFIG_SERVERIP                 192.168.1.104
+#define CONFIG_IPADDR                   10.0.0.98
+#define CONFIG_SERVERIP                 10.0.0.20
 #define CONFIG_ETHADDR                  1A:2A:3A:4A:5A:6A
 #endif /* CONFIG_CMD_NET */
 

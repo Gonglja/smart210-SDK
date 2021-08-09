@@ -16,8 +16,9 @@ make all
 
 ```shell
 #!/bin/bash
-sudo dd iflag=sync oflag=sync if=spl/smart210-spl.bin of=/dev/sdc seek=1
-sudo dd iflag=sync oflag=sync if=u-boot.bin of=/dev/sdc seek=32
+DST=/dev/mmcblk0
+sudo dd iflag=sync oflag=sync if=spl/smart210-spl.bin of=$DST seek=1
+sudo dd iflag=sync oflag=sync if=u-boot.bin of=$DST  seek=32
 sync
 echo "done."
 ```
@@ -122,6 +123,45 @@ static struct mtd_partition smdk_default_nand_part[] = {
 
 
 
+
+
+## busybox
+
+首先打开make menuconfig配置交叉编译工具链的路径为
+
+
+
+```bash
+# 1配置相关选项
+make menuconfig
+# 1.1设置交叉编译工具链
+# Busybox Settings  --->   
+#       Build Options  ---> 
+#               (/opt/FriendlyARM/toolschain/4.5.1/bin/arm-none-linux-gnueabi-) Cross Compiler prefix  
+/opt/FriendlyARM/toolschain/4.5.1/bin/arm-none-linux-gnueabi-
+
+# 1.2设置make install后的路径
+# Busybox Settings  --->   
+#       Installation Options ("make install" behavior)  ---> 
+#               (./_install) BusyBox installation prefix  
+
+# 2编译安装
+# 生成的数据位置在1.2配置的路径下
+make -j4 && make install
+
+# 3将产物拷贝至 rootfs文件夹下，替换原来的
+
+# 4生成jfss2镜像
+# 此处参数意义：
+#    rootfs/   要打包的文件系统
+#    -s        页大小
+#    -e        为要指定的擦除块的大小，板子芯片的nand块大小为128k(128*1024=0x20000)，此处两个值可通过在uboot中使用命令nand info查看
+#    --pad     为生成镜像的大小 不足xx时以脏数据填充，大于时以实际数据大小为主
+sudo mkfs.jffs2  -r rootfs/ -o rootfs.jffs2 -s 0x800 -e 0x20000 --pad=0x800000 -n
+```
+
+
+
 ## rootfs
 
 注意：
@@ -145,7 +185,12 @@ nand write.jffs2 20000000 580000 $filesize
 set bootargs console=ttySAC0,115200 root=/dev/mtdblock4 rootfstype=jffs2
 ```
 
+如何制作jffs2镜像
 
+```bash
+#此处参数意义：rootfs-glj/要打包的文件系统、-s页大小、-e为要指定的擦除块的大小，板子芯片的nand块大小为128k(128*1024=0x20000)，此处两个值可通过在uboot中使用命令nand info查看
+sudo mkfs.jffs2  -r rootfs-glj/ -o rootfs.jffs2 -s 0x800 -e 0x20000 --pad=0x800000 -n
+```
 
 ### nfs
 

@@ -188,9 +188,39 @@ set bootargs console=ttySAC0,115200 root=/dev/mtdblock4 rootfstype=jffs2
 如何制作jffs2镜像
 
 ```bash
-#此处参数意义：rootfs-glj/要打包的文件系统、-s页大小、-e为要指定的擦除块的大小，板子芯片的nand块大小为128k(128*1024=0x20000)，此处两个值可通过在uboot中使用命令nand info查看
-sudo mkfs.jffs2  -r rootfs-glj/ -o rootfs.jffs2 -s 0x800 -e 0x20000 --pad=0x800000 -n
+#此处参数意义：rootfs/要打包的文件系统、-s页大小、-e为要指定的擦除块的大小，板子芯片的nand块大小为128k(128*1024=0x20000)，此处两个值可通过在uboot中使用命令nand info查看
+sudo mkfs.jffs2  -r rootfs/ -o rootfs.jffs2 -s 0x800 -e 0x20000 --pad=0x800000 -n
 ```
+
+jffs2可能会出现的错误
+
+> Q：在启动过程中出现at91sam user.warn kernel: Empty flash at 0x00f0fffc ends at 0x00f10000问题
+>
+> A：在mkfs.jffs2的时候，加上-e 0x20000指定擦除块的大小。-e是指定擦除块的大小，我们使用的nandflash的块大小为128K字节，因此-e后的参数为(128*1024)10=(20000)16。
+>
+>  
+>
+> Q：启动的时候出现CLEANMARKER node found at 0x00f10000 has totlen 0xc != normal 0x0问题。
+>
+> A：在mkfs.jffs2的时候，加上-n选项。-n, --no-cleanmarkers。指明不添加清楚标记（nand flash 有自己的校检块，存放相关的信息。）如果挂载后会出现类似：CLEANMARKER node found at 0x0042c000 has totlen 0xc != normal 0x0 的警告，则加上-n 就会消失。
+>
+>  
+>
+> Q：解决jffs2_scan_eraseblock(): Magic bitmask 0x1985 not found at 0x01649298: 0xa25e instead问题的方法
+>
+> A：在mkfs.jffs2的时候加上-s 2048（页大小，由芯片决定）以及-l(小端模式)两个选项。-s是指明页的大小，我们使用的nandflash的页的大小为2048字节。-l指明为小端模式，一般嵌入式下均为小端模式。
+>
+>  
+>
+> 说明：
+>
+> 1、  在文件系统制作的过程，均需要使用root用户权限；
+>
+> 2、  一般嵌入式下只有root用户登录，因此文件系统中的所有文件都需要具有root可执行权限，如果用其他用户登录，请保证文件系统中文件（特别是自己添加的文件）的相应可执行权限。
+
+
+
+
 
 ### nfs
 

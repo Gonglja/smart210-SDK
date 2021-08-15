@@ -4,5 +4,5 @@
 
 make uImage -j4
 
-echo "copy to ../bin/smart210"
-cp arch/arm/boot/uImage ~/bin/smart210
+echo "copy to ../rootfs/"
+cp arch/arm/boot/uImage ../rootfs/

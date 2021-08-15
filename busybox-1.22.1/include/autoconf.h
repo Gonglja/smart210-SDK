@@ -2,7 +2,7 @@
  * Automatically generated C config: don't edit
  * Busybox version: 1.22.1
  */
-#define AUTOCONF_TIMESTAMP "2021-08-09 10:18:56 CST"
+#define AUTOCONF_TIMESTAMP "2021-08-11 15:09:27 CST"
 
 #define CONFIG_HAVE_DOT_CONFIG 1
 #define ENABLE_HAVE_DOT_CONFIG 1
@@ -748,22 +748,14 @@
 # define IF_FEATURE_CPIO_P(...) __VA_ARGS__
 #endif
 #define IF_NOT_FEATURE_CPIO_P(...)
-#define CONFIG_DPKG 1
-#define ENABLE_DPKG 1
-#ifdef MAKE_SUID
-# define IF_DPKG(...) __VA_ARGS__ "CONFIG_DPKG"
-#else
-# define IF_DPKG(...) __VA_ARGS__
-#endif
-#define IF_NOT_DPKG(...)
-#define CONFIG_DPKG_DEB 1
-#define ENABLE_DPKG_DEB 1
-#ifdef MAKE_SUID
-# define IF_DPKG_DEB(...) __VA_ARGS__ "CONFIG_DPKG_DEB"
-#else
-# define IF_DPKG_DEB(...) __VA_ARGS__
-#endif
-#define IF_NOT_DPKG_DEB(...)
+#undef CONFIG_DPKG
+#define ENABLE_DPKG 0
+#define IF_DPKG(...)
+#define IF_NOT_DPKG(...) __VA_ARGS__
+#undef CONFIG_DPKG_DEB
+#define ENABLE_DPKG_DEB 0
+#define IF_DPKG_DEB(...)
+#define IF_NOT_DPKG_DEB(...) __VA_ARGS__
 #undef CONFIG_FEATURE_DPKG_DEB_EXTRACT_ONLY
 #define ENABLE_FEATURE_DPKG_DEB_EXTRACT_ONLY 0
 #define IF_FEATURE_DPKG_DEB_EXTRACT_ONLY(...)

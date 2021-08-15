@@ -1,7 +1,7 @@
 #
 # Automatically generated make config: don't edit
 # Busybox version: 1.22.1
-# Mon Aug  9 10:17:55 2021
+# Mon Aug  9 12:03:08 2021
 #
 CONFIG_HAVE_DOT_CONFIG=y
 
@@ -147,8 +147,8 @@ CONFIG_BZIP2=y
 CONFIG_CPIO=y
 CONFIG_FEATURE_CPIO_O=y
 CONFIG_FEATURE_CPIO_P=y
-CONFIG_DPKG=y
-CONFIG_DPKG_DEB=y
+# CONFIG_DPKG is not set
+# CONFIG_DPKG_DEB is not set
 # CONFIG_FEATURE_DPKG_DEB_EXTRACT_ONLY is not set
 CONFIG_GZIP=y
 CONFIG_FEATURE_GZIP_LONG_OPTIONS=y

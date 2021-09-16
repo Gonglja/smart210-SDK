@@ -89,15 +89,16 @@
 
 #define MTDIDS_DEFAULT          "nand0=s5p-nand"
 #define MTDPARTS_DEFAULT        "mtdparts=s5p-nand:256k(bootloader)"\
-				",128k(device_tree)"\
+								",128k(device_tree)"\
                                 ",128k(params)"\
                                 ",5m(kernel)"\
                                 ",-(rootfs)"
 
 #define NORMAL_MTDPARTS_DEFAULT MTDPARTS_DEFAULT
 
-#define CONFIG_BOOTCOMMAND	"nand read.jffs2 0x30007FC0 0x80000 0x500000;  bootm 0x30007FC0"
+#define CONFIG_BOOTCOMMAND	"run nfsboot"
 
+/*
 #define CONFIG_RAMDISK_BOOT	"root=/dev/ram0 rw rootfstype=ext2" \
 				" console=ttySAC0,115200n8" \
 				" mem=128M"
@@ -108,11 +109,20 @@
 
 #define CONFIG_BOOTARGS	"root=/dev/mtdblock5 ubi.mtd=4" \
 			" rootfstype=cramfs " CONFIG_COMMON_BOOT
-
+*/
+/*
 #define CONFIG_UPDATEB	"updateb=onenand erase 0x0 0x40000;" \
 			" onenand write 0x32008000 0x0 0x40000\0"
-
+*/
 #define CONFIG_ENV_OVERWRITE
+#define CONFIG_EXTRA_ENV_SETTINGS				\
+		"set machid 1160\0"						\
+		"nfsboot=" 								\
+			"set bootargs root=/dev/nfs nfsroot=10.0.0.46:/home/pwn/Desktop/work/share/smart210/git/smart210-SDK/rootfs ip=10.0.0.98:10.0.0.46:10.0.0.1:255.255.255.0::eth0:off init=/linuxrc console=ttySAC0,115200;"    					\
+			"nfs 20000000 10.0.0.46:/home/pwn/Desktop/work/share/smart210/git/smart210-SDK/rootfs/uImage;bootm 20000000\0"	 \
+	 	"nandboot="	  							\
+	 		"nand read.jffs2 0x30007FC0 0x80000 0x500000;  bootm 0x30007FC0\0"			
+/*
 #define CONFIG_EXTRA_ENV_SETTINGS					\
 	CONFIG_UPDATEB \
 	"updatek=" \
@@ -154,7 +164,7 @@
 	"bootblock=5\0" \
 	"ubiblock=4\0" \
 	"ubi=enabled"
-
+*/
 /*
  * Miscellaneous configurable options
  */
@@ -238,6 +248,13 @@
 #define CONFIG_SERVERIP                 10.0.0.20
 #define CONFIG_ETHADDR                  1A:2A:3A:4A:5A:6A
 #endif /* CONFIG_CMD_NET */
+
+
+/*
+*Flattened Device Tree
+* by gonglanjing
+*/
+#define CONFIG_OF_LIBFDT
 
 /*
 * Nand Controller

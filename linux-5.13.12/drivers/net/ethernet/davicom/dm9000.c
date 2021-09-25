@@ -35,6 +35,9 @@
 #include <asm/irq.h>
 #include <asm/io.h>
 
+/*add by glj*/
+#include <linux/clk.h>
+
 #include "dm9000.h"
 
 /* Board/System/Debug information/definition ---------------- */
@@ -1425,6 +1428,8 @@ dm9000_probe(struct platform_device *pdev)
 	enum of_gpio_flags flags;
 	struct regulator *power;
 	bool inv_mac_addr = false;
+	/*add by glj*/
+	const char *clk_name;
 
 	power = devm_regulator_get(dev, "vcc");
 	if (IS_ERR(power)) {
@@ -1443,6 +1448,7 @@ dm9000_probe(struct platform_device *pdev)
 
 	reset_gpios = of_get_named_gpio_flags(dev->of_node, "reset-gpios", 0,
 					      &flags);
+					      
 	if (gpio_is_valid(reset_gpios)) {
 		ret = devm_gpio_request_one(dev, reset_gpios, flags,
 					    "dm9000_reset");
@@ -1563,6 +1569,19 @@ dm9000_probe(struct platform_device *pdev)
 		dev_err(db->dev, "failed to ioremap data reg\n");
 		ret = -EINVAL;
 		goto out;
+	}
+
+	/* add by glj*/
+	/* Enable clock if specified */
+	if (!of_property_read_string(dev->of_node, "clock-names", &clk_name)) {
+	    struct clk *clk = devm_clk_get(dev, clk_name);
+	    if (IS_ERR(clk)) {
+	        dev_err(dev, "cannot get clock of %s\n", clk_name);
+	        ret = PTR_ERR(clk);
+	        goto out;
+	    }
+	    clk_prepare_enable(clk);
+	    dev_info(dev, "enable clock '%s'\n", clk_name);
 	}
 
 	/* fill in parameters for net-dev structure */
